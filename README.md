@@ -22,7 +22,7 @@ Then you'll get `client_main` and `server_main`.
 
 - [ ] Protocol: Support IRCv3 completely.
 - [ ] Feature: Provide web interfaces.
-- [ ] Feature: Provide libraris.
+- [ ] Feature: Provide libraries.
 - [x] Platform: Support Linux.
 - [ ] Platform: Support Windows.
 - [ ] Platform: Support macOS/BSD.
