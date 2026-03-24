@@ -20,9 +20,9 @@ Then you'll get `client_main` and `server_main`.
 
 ## Goals
 
-[ ] Protocol: Support IRCv3 completely.
-[ ] Feature: Provide web interfaces.
-[ ] Feature: Provide libraris.
-[x] Platform: Support Linux.
-[ ] Platform: Support Windows.
-[ ] Platform: Support macOS/BSD.
+- [ ] Protocol: Support IRCv3 completely.
+- [ ] Feature: Provide web interfaces.
+- [ ] Feature: Provide libraris.
+- [x] Platform: Support Linux.
+- [ ] Platform: Support Windows.
+- [ ] Platform: Support macOS/BSD.
