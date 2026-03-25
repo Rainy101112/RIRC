@@ -1,5 +1,5 @@
 CC		:= gcc
-C_FLAGS	:= -Wall -Wextra -O2 -I include -o
+C_FLAGS	:= -Wall -Wextra -O2 -ggdb -I include -o
 
 all: build
 

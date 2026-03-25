@@ -26,6 +26,28 @@ void broadcast_message(const char *message, int sender_fd) {
     }
 }
 
+int is_valid_nick(const char *nick) {
+    if (strlen(nick) < 1 || strlen(nick) > 31) return 0;
+    if (nick[0] >= '0' && nick[0] <= '9') return 0;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (clients[i] && clients[i]->registered && strcmp(clients[i]->nick, nick) == 0) {
+            return -1;
+        }
+    }
+    return 1;
+}
+
+void cleanup_client(int epoll_fd, int fd) {
+    if (clients[fd] != NULL) {
+        free(clients[fd]);
+        clients[fd] = NULL;
+    }
+    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+    close(fd);
+    printf("Disconnected (fd: %d)\n", fd);
+}
+
 /* Set socket to nonblocking mode to support epoll */
 void set_nonblocking(int sock) {
     int opts = fcntl(sock, F_GETFL);
@@ -33,6 +55,8 @@ void set_nonblocking(int sock) {
 }
 
 int main() {
+    memset(clients, 0, sizeof(clients));
+
     int listen_sock, epoll_fd;
     struct sockaddr_in addr;
     struct epoll_event ev, events[MAX_EVENTS];
@@ -82,28 +106,38 @@ int main() {
 
                 if (len <= 0) {
                     /* Clean disconnected clients */
-                    free(clients[fd]);
-                    clients[fd] = NULL;
-                    close(fd);
-                    printf("Disconnected (fd: %d)\n", fd);
+                    cleanup_client(epoll_fd, fd);
                 } else {
                     buf[len] = '\0';
                     struct irc_user *current_user = clients[fd];
 
                     if (strncmp(buf, "NICK ", 5) == 0) {
-                        sscanf(buf + 5, "%s", current_user->nick);
+                        sscanf(buf + 5, "%31s", current_user->nick);
+                        if (!is_valid_nick(current_user->nick)) {
+                            const char *err_msg = "ERROR :Illegal Nickname\r\n";
+                            send(fd, err_msg, strlen(err_msg), 0);
+                            printf("Illegal register attempt (fd: %d). Closing.\n", fd);
+
+                            cleanup_client(epoll_fd, fd);
+                        }
                     }
                     else if (strncmp(buf, "USER ", 5) == 0) {
                         if (strlen(current_user->nick) != 0) {
-                            sscanf(buf + 5, "%s", current_user->user);
+                            sscanf(buf + 5, "%31s", current_user->user);
+                            current_user->registered = 1;
                             printf("Registered NICK %s USER %s as new a user (fd: %d)\n", current_user->nick, current_user->user, fd);
+
+                            char welcome[256];
+                            snprintf(welcome, sizeof(welcome), ":server 001 %s :Welcome to the IRC Network!\r\n", current_user->nick);
+                            send(fd, welcome, strlen(welcome), 0);
                         }
                         else {
-                            send(fd, "Error: Illegal register!!!", 27, 0);
-                            free(clients[fd]);
-                            clients[fd] = NULL;
-                            close(fd);
-                            printf("Disconnected (fd: %d) caused by illegal register\n", fd);
+                            const char *err_msg = "ERROR :Nickname must be set before USER\r\n";
+                            send(fd, err_msg, strlen(err_msg), 0);
+
+                            printf("Illegal register attempt (fd: %d). Closing.\n", fd);
+
+                            cleanup_client(epoll_fd, fd);
                         }
                     }
                     else if (strncmp(buf, "PRIVMSG ", 8) == 0 && current_user->registered) {
