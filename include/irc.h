@@ -17,12 +17,22 @@ enum irc_msg_modes {
     MODE_UNKNOWN, MODE_TAGMSG, MODE_PRIVMSG, MODE_NOTICE, MODE_STATUSMSG
 };
 
-
 struct irc_msg {
     char *sender;
     int mode;
     char *channel;
     char *content;
+};
+
+struct irc_user {
+    int fd;
+
+    char nick[32];
+    char user[32];
+    int registered;
+
+    char recv_buf[MAX_BUF];
+    int buf_len;
 };
 
 struct irc_msg *irc_msg_parser(const char *raw);
