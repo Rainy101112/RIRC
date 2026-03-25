@@ -6,12 +6,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/in.h>
 
 #define MAX_BUF 512
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 enum irc_msg_modes {
     MODE_UNKNOWN, MODE_TAGMSG, MODE_PRIVMSG, MODE_NOTICE, MODE_STATUSMSG
