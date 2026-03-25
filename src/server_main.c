@@ -113,7 +113,7 @@ int main() {
 
                     if (strncmp(buf, "NICK ", 5) == 0) {
                         sscanf(buf + 5, "%31s", current_user->nick);
-                        if (!is_valid_nick(current_user->nick)) {
+                        if (is_valid_nick(current_user->nick) <= 0) {
                             const char *err_msg = "ERROR :Illegal Nickname\r\n";
                             send(fd, err_msg, strlen(err_msg), 0);
                             printf("Illegal register attempt (fd: %d). Closing.\n", fd);
@@ -122,7 +122,7 @@ int main() {
                         }
                     }
                     else if (strncmp(buf, "USER ", 5) == 0) {
-                        if (strlen(current_user->nick) != 0) {
+                        if (current_user->nick[0] != '\0') {
                             sscanf(buf + 5, "%31s", current_user->user);
                             current_user->registered = 1;
                             printf("Registered NICK %s USER %s as new a user (fd: %d)\n", current_user->nick, current_user->user, fd);
