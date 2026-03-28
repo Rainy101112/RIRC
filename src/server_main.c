@@ -144,20 +144,18 @@ int main() {
         int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         for (int n = 0; n < nfds; ++n) {
             if (events[n].data.fd == listen_sock) {
-                if (events[n].data.fd == listen_sock) {
-                    /* Accept new client */
-                    int conn_sock = accept(listen_sock, NULL, NULL);
-                    set_nonblocking(conn_sock);
+                /* Accept new client */
+                int conn_sock = accept(listen_sock, NULL, NULL);
+                set_nonblocking(conn_sock);
 
-                    struct irc_user *new_user = calloc(1, sizeof(struct irc_user));
-                    new_user->fd = conn_sock;
-                    clients[conn_sock] = new_user;
+                struct irc_user *new_user = calloc(1, sizeof(struct irc_user));
+                new_user->fd = conn_sock;
+                clients[conn_sock] = new_user;
 
-                    ev.events = EPOLLIN | EPOLLET;
-                    ev.data.fd = conn_sock;
-                    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_sock, &ev);
-                    printf("New connection (fd: %d)\n", conn_sock);
-                }
+                ev.events = EPOLLIN | EPOLLET;
+                ev.data.fd = conn_sock;
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_sock, &ev);
+                printf("New connection (fd: %d)\n", conn_sock);
             } else {
                 int fd = events[n].data.fd;
 
