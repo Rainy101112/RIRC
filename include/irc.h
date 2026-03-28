@@ -31,8 +31,8 @@ struct irc_user {
     char user[32];
     int registered;
 
-    char recv_buf[MAX_BUF];
-    int buf_len;
+    char read_buffer[MAX_BUF * 2];
+    int read_pos;
 };
 
 struct irc_msg *irc_msg_parser(const char *raw);
