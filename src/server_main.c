@@ -108,7 +108,6 @@ void handle_client_data(int epoll_fd, int fd) {
             broadcast_message(out_msg, fd);
         }
 
-        int handled_len = (line - current_user->read_buffer) + 1;
         int remaining = strlen(line + 1);
         memmove(current_user->read_buffer, line + 1, remaining + 1);
     }
