@@ -10,10 +10,12 @@
 #include <netinet/in.h>
 #include <fcntl.h>
 
+#include <openssl/evp.h>
+#include <openssl/buffer.h>
+
 #include <irc.h>
 
 #define MAX_EVENTS 64
-#define MAX_CLIENTS 4096
 #define PORT 6667
 
 struct irc_user *clients[MAX_CLIENTS];
@@ -45,7 +47,7 @@ void cleanup_client(int epoll_fd, int fd) {
     }
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL);
     close(fd);
-    printf("Disconnected (fd: %d)\n", fd);
+    printf("[*] Disconnected (fd: %d)\n", fd);
 }
 
 /* Set socket to nonblocking mode to support epoll */
@@ -76,7 +78,7 @@ void handle_client_data(int epoll_fd, int fd) {
             if (is_valid_nick(current_user->nick) <= 0) {
                 const char *err_msg = "ERROR :Illegal Nickname\r\n";
                 send(fd, err_msg, strlen(err_msg), 0);
-                printf("Illegal register attempt (fd: %d). Closing.\n", fd);
+                printf("[*] Illegal register attempt (fd: %d). Closing.\n", fd);
 
                 cleanup_client(epoll_fd, fd);
             }
@@ -85,7 +87,7 @@ void handle_client_data(int epoll_fd, int fd) {
             if (current_user->nick[0] != '\0') {
                 sscanf(cmd + 5, "%31s", current_user->user);
                 current_user->registered = 1;
-                printf("Registered NICK %s USER %s as new a user (fd: %d)\n", current_user->nick, current_user->user, fd);
+                printf("[*] Registered NICK %s USER %s as new a user (fd: %d)\n", current_user->nick, current_user->user, fd);
 
                 char welcome[256];
                 snprintf(welcome, sizeof(welcome), ":server 001 %s :Welcome to the IRC Network!\r\n", current_user->nick);
@@ -95,7 +97,7 @@ void handle_client_data(int epoll_fd, int fd) {
                 const char *err_msg = "ERROR :Nickname must be set before USER\r\n";
                 send(fd, err_msg, strlen(err_msg), 0);
 
-                printf("Illegal register attempt (fd: %d). Closing.\n", fd);
+                printf("[*] Illegal register attempt (fd: %d). Closing.\n", fd);
 
                 cleanup_client(epoll_fd, fd);
             }
@@ -138,7 +140,7 @@ int main() {
     ev.data.fd = listen_sock;
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_sock, &ev);
 
-    printf("IRC Server started on port %d...\n", PORT);
+    printf("[*] IRC Server started on port %d...\n", PORT);
 
     while (1) {
         int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
@@ -155,7 +157,7 @@ int main() {
                 ev.events = EPOLLIN | EPOLLET;
                 ev.data.fd = conn_sock;
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_sock, &ev);
-                printf("New connection (fd: %d)\n", conn_sock);
+                printf("[*] New connection (fd: %d)\n", conn_sock);
             } else {
                 int fd = events[n].data.fd;
 

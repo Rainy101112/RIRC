@@ -8,6 +8,9 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
+#include <openssl/evp.h>
+#include <openssl/buffer.h>
+
 #include "irc.h"
 
 int main(int argc, char *argv[]) {

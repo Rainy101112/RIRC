@@ -12,6 +12,9 @@
 #include <netinet/in.h>
 
 #define MAX_BUF 512
+#define MAX_CLIENTS 4096
+
+#define FEATURE_SASL
 
 enum irc_msg_modes {
     MODE_UNKNOWN, MODE_TAGMSG, MODE_PRIVMSG, MODE_NOTICE, MODE_STATUSMSG
@@ -30,9 +33,17 @@ struct irc_user {
     char nick[32];
     char user[32];
     int registered;
+    int identified;
 
     char read_buffer[MAX_BUF * 2];
     int read_pos;
+};
+
+struct irc_channel {
+    char name[32];
+    char password[32];
+
+    struct irc_user *users[MAX_CLIENTS];
 };
 
 struct irc_msg *irc_msg_parser(const char *raw);
