@@ -12,6 +12,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
+#include <openssl/bio.h>
 
 #include <irc.h>
 
@@ -38,6 +39,50 @@ int is_valid_nick(const char *nick) {
         }
     }
     return 1;
+}
+
+void handle_sasl_authenticate(int fd, struct irc_user *user, const char *b64_input) {
+    if (strcmp(b64_input, "*") == 0) {
+        irc_send(fd, "906 * :SASL authentication aborted");
+        user->sasl_active = 0;
+        return;
+    }
+
+    int decoded_len = 0;
+    unsigned char *decoded = base64_decode(b64_input, strlen(b64_input), &decoded_len);
+    
+    if (!decoded) {
+        irc_send(fd, "904 * :SASL authentication failed");
+        return;
+    }
+
+    /* PLAIN format: \0username\0password */
+    char *username = (char *)decoded + 1; 
+    char *password = username + strlen(username) + 1;
+
+    if (strcmp(username, "admin") == 0 && strcmp(password, "123456") == 0) {
+        user->authenticated = 1;
+        irc_send(fd, "903 %s :SASL authentication successful", user->nick[0] ? user->nick : "*");
+        printf("User %s SASL authenticated.\n", username);
+    } else {
+        irc_send(fd, "904 %s :SASL authentication failed", user->nick[0] ? user->nick : "*");
+    }
+
+    free(decoded);
+    user->sasl_active = 0;
+}
+
+void try_register_user(int fd, struct irc_user *user) {
+    if (user->nick[0] != '\0' && user->user[0] != '\0' && !user->cap_negotiating) {
+        if (!user->registered) {
+            user->registered = 1;
+            irc_send(fd, ":server 001 %s :Welcome to the IRC Network!", user->nick);
+            /* Add +r sign */
+            if (user->authenticated) {
+                irc_send(fd, ":server MODE %s +r", user->nick);
+            }
+        }
+    }
 }
 
 void cleanup_client(int epoll_fd, int fd) {
@@ -73,7 +118,17 @@ void handle_client_data(int epoll_fd, int fd) {
         *line = '\0';
         char *cmd = current_user->read_buffer;
 
-        if (strncmp(cmd, "NICK ", 5) == 0) {
+        if (strncmp(cmd, "CAP ", 4) == 0) {
+            if (strncmp(cmd + 4, "LS", 2) == 0) {
+                printf("[*] Client (fd: %d) is negotiating capabilities with server...\n", fd);
+                const char *msg = "CAP * LS :sasl";
+                send(fd, msg, strlen(msg), 0);
+            }
+            else if (strncmp(cmd + 4, "REQ ", 4) == 0) {
+                
+            }
+        }
+        else if (strncmp(cmd, "NICK ", 5) == 0) {
             sscanf(cmd + 5, "%31s", current_user->nick);
             if (is_valid_nick(current_user->nick) <= 0) {
                 const char *err_msg = "ERROR :Illegal Nickname\r\n";

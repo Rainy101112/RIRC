@@ -33,7 +33,10 @@ struct irc_user {
     char nick[32];
     char user[32];
     int registered;
-    int identified;
+
+    int cap_negotiating;
+    int sasl_active;
+    int authenticated;
 
     char read_buffer[MAX_BUF * 2];
     int read_pos;
